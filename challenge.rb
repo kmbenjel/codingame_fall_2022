@@ -1,8 +1,6 @@
 =begin
 
 
-Write a starter AI for robots to control more patches than your opponent at the end of the match.
-
 Robots are deployed in a field of abandoned electronics, their purpose is to refurbish patches of this field into functional tech.
 
 The robots are also capable of self-disassembly and self-replication, but they need raw materials from structures called Recyclers which the robots can build.
@@ -20,7 +18,7 @@ scrapAmount: this patch's amount of usable scrap. It is equal to the amount of t
 owner: which player's team controls this patch. Will equal -1 if the patch is neutral or Grass.
 Robots
 Any number of robots can occupy a tile, but if units of opposing teams end the turn on the same tile, they are removed 1 for 1. Afterwards, if the tile still has robots, they will mark that tile.
-
+``
 After moving all robots to the middle tile, only one blue robot remains and the tile is marked.
 Robots may not occupy a Grass tile or share a tile with a Recycler.
 Recyclers
