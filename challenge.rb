@@ -66,7 +66,10 @@ loop {
   my_tiles.each { |tile|
     recyclers_in_range = 0
 	my_recyclers.each do |r|
-		if [[tile[:x] - 1, tile[:y]], [tile[:x], tile[:y] - 1], [tile[:x] + 1, tile[:y]], []].index()
+		if [[tile[:x] - 1, tile[:y]], [tile[:x], tile[:y] - 1], [tile[:x] + 1, tile[:y]], [tile[:x], tile[:y] + 1]].index([r[:x], r[:y]])
+			recyclers_in_range += 1
+		end
+	end
     if tile[:can_spawn]
       amount = tile[:units] % 10 # TODO: pick amount of robots to spawn here
       if amount > 0
@@ -74,7 +77,7 @@ loop {
       end
     end
     if tile[:can_build]
-        should_build = tile[:in_range_of_recycler] # TODO: pick whether to build recycler here
+        should_build = tile[:in_range_of_recycler] && !recyclers_in_range # TODO: pick whether to build recycler here
         if should_build
             actions<<"BUILD #{tile[:x]} #{tile[:y]}"
         end
