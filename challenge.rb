@@ -46,7 +46,8 @@ loop {
      if tile[:owner] == ME
          my_tiles.append(tile)
          if tile[:units] > 0
-             tile[:target_x] = farthest
+             tile[:target_x] = farthest(width, height, x, y)[:x]
+             tile[:target_y] = farthest(width, height, x ,y)[:y]
              my_units.append(tile)
          elsif tile[:recycler]
              my_recyclers.append(tile)
@@ -67,13 +68,13 @@ loop {
   actions = []
   my_tiles.each { |tile|
     if tile[:can_build]
-      should_build = !tile[:in_range_of_recycler] && tile[:units] >= 20 # TODO: pick whether to build recycler here
+      should_build = 0  # TODO: pick whether to build recycler here
       if should_build
           actions<<"BUILD #{tile[:x]} #{tile[:y]}"
       end
     end
     if tile[:can_spawn]
-      amount = tile[:units] % 10 # TODO: pick amount of robots to spawn here
+      amount = tile[:units] # TODO: pick amount of robots to spawn here
       if amount > 0
           actions<<"SPAWN #{amount} #{tile[:x]} #{tile[:y]}"
       end
@@ -81,11 +82,6 @@ loop {
   }
   role = 0
   my_units.each { |tile|
-    if role % 2 == 0
-      target_x = init_x
-      target_y = init_y
-    end
-    role += 1
     target = { x: target_x, y: target_y }; # TODO: pick a destination tile
     if target
       amount = tile[:units] / 2 # TODO: pick amount of units to move
