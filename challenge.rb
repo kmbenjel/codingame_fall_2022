@@ -1,18 +1,10 @@
-def farthest_point(x,y,point_x,point_y)
-  if point_x > x/2
-    far_x = 0
-  else
-    far_x = x
-  end
-  if point_y > y/2
-    far_y = 0
-  else
-    far_y = y
-  end
-  [far_x,far_y]
-end
-
 STDOUT.sync = true # DO NOT REMOVE
+
+def farthest_point(w, h, x, y)
+  far_x = x > w/2 ? 0 : w
+  far_y = y > h/2 ? 0 : h
+  {x: far_x, y: far_y}
+end
 
 ME = 1
 OPP = 0
@@ -53,7 +45,7 @@ loop {
      if tile[:owner] == ME
          my_tiles.append(tile)
          if tile[:units] > 0
-             tile[:target_x] = 
+             tile[:target_x] =
              my_units.append(tile)
          elsif tile[:recycler]
              my_recyclers.append(tile)
