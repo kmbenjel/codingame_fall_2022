@@ -1,6 +1,7 @@
 STDOUT.sync = true # DO NOT REMOVE
 
-def farthest_point(w, h, x, y)
+#Find the farthest point in the field
+def farthest(w, h, x, y)
   far_x = x > w/2 ? 0 : w
   far_y = y > h/2 ? 0 : h
   {x: far_x, y: far_y}
@@ -45,7 +46,7 @@ loop {
      if tile[:owner] == ME
          my_tiles.append(tile)
          if tile[:units] > 0
-             tile[:target_x] =
+             tile[:target_x] = farthest
              my_units.append(tile)
          elsif tile[:recycler]
              my_recyclers.append(tile)
@@ -62,12 +63,6 @@ loop {
      end
     }
   }
-
-  init_x = my_tiles.first[:x]
-  init_y = my_tiles.first[:y]
-
-  target_x = width - init_x
-  target_y = height - init_y
 
   actions = []
   my_tiles.each { |tile|
