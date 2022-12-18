@@ -1,23 +1,15 @@
 #write a function that takes a the dimentions of a field and the coordinates of a point and returns the cooridinates of the farthest point from the given point
-
-def farthest_point(x, y, x1, y1)
-  if x1 > x/2
-    x2 = 0
+def farthest_point(x,y,point_x,point_y)
+  if point_x > x/2
+    far_x = 0
   else
-    x2 = x
+    far_x = x
   end
-  if y1 > y/2
-    y2 = 0
+  if point_y > y/2
+    far_y = 0
   else
-    y2 = y
+    far_y = y
   end
-  return [x2, y2]
+  [far_x,far_y]
 end
-
-x = 10
-y = 10
-x1 = 9
-y1 = 9
-puts farthest_point(x, y, x1, y1)
-
 
