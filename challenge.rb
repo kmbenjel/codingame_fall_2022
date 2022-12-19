@@ -1,11 +1,13 @@
 STDOUT.sync = true # DO NOT REMOVE
 
-#Find the farthest point in the field
-def farthest w h, x, y)
+# Find the farthest point in the field
+def farthest(w, h, x, y)
   far_x = x > w/2 ? 0 : w
   far_y = y > h/2 ? 0 : h
-  {x: far_x, y: far_y}
+  { x: far_x, y: far_y }
 end
+
+
 
 ME = 1
 OPP = 0
@@ -46,8 +48,6 @@ loop {
      if tile[:owner] == ME
          my_tiles.append(tile)
          if tile[:units] > 0
-             tile[:target_x] = farthest(width, height, x, y)[:x]
-             tile[:target_y] = farthest(width, height, x ,y)[:y]
              my_units.append(tile)
          elsif tile[:recycler]
              my_recyclers.append(tile)
@@ -64,27 +64,36 @@ loop {
      end
     }
   }
-
+  target_x = farthest(width, height, my_tiles.first[:x], my_tiles.first[:y])[:x]
+  target_y = farthest(width, height, my_tiles.first[:x], my_tiles.first[:y])[:y]
   actions = []
+  role = 0
   my_tiles.each { |tile|
+    role += 1
     if tile[:can_build]
-      should_build = 0  # TODO: pick whether to build recycler here
+      if !tile[:in_range_of_recycler] && role % 7 == 0
+        should_build = 1 # TODO: pick whether to build recycler here
+      else
+        should_build = false
+      end
       if should_build
           actions<<"BUILD #{tile[:x]} #{tile[:y]}"
       end
     end
     if tile[:can_spawn]
-      amount = tile[:units] / 10 # TODO: pick amount of robots to spawn here
+
+      amount = my_matter / 10 # TODO: pick amount of robots to spawn here
+
       if amount > 0
           actions<<"SPAWN #{amount} #{tile[:x]} #{tile[:y]}"
       end
     end
   }
-  role = 0
+
   my_units.each { |tile|
     target = { x: target_x, y: target_y }; # TODO: pick a destination tile
     if target
-      amount = tile[:units] / 2 # TODO: pick amount of units to move
+      amount = tile[:units] # TODO: pick amount of units to move
       actions<<"MOVE #{amount} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
     end
   }
