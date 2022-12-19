@@ -74,7 +74,7 @@ loop {
       end
     end
     if tile[:can_spawn]
-      amount = tile[:units] # TODO: pick amount of robots to spawn here
+      amount = tile[:units] / 10 # TODO: pick amount of robots to spawn here
       if amount > 0
           actions<<"SPAWN #{amount} #{tile[:x]} #{tile[:y]}"
       end
