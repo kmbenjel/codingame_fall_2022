@@ -1,5 +1,8 @@
+
 STDOUT.sync = true # DO NOT REMOVE
-$tiles = Array.new
+
+$opp_units_initial = []
+
 # Find the farthest point in the field
 def farthest(w, h, x, y)
   far_x = x > w/2 ? 0 : w
@@ -7,23 +10,6 @@ def farthest(w, h, x, y)
   { x: far_x, y: far_y }
 end
 
-<<<<<<< HEAD
-# Function if_scrap that ensures that coordinates x and y are >= 1, and scrap_amount in the current tile is is >= 1.
-
-def if_scrap(x, y)
-  x >= 1 && y >= 1 && $tiles.select { |tile| tile[:x] == x && tile[:y] == y && tile[:scrap_amount] >= 1 } != []
-end
-
-# Function if_scrap_around checks if_scrap for the current tile and the four neighboring tiles
-
-def if_scrap_around(x, y)
-  if_scrap(x, y) && if_scrap(x - 1, y) && if_scrap(x + 1, y) && if_scrap(x, y - 1) && if_scrap(x, y + 1)
-end
-
-# Function that deletes a tile
-def delete_tile(x, y, tiles)
-  tiles.delete_if { |t| t[:x] == x && t[:y] == y }
-=======
 # Collect my tiles neighboring the opponent tiles
 def opp_is_close(opp_tiles, my_tiles)
   close_tiles = []
@@ -37,24 +23,82 @@ def opp_is_close(opp_tiles, my_tiles)
   return close_tiles
 end
 
-# Check if I have scrap in the current tile and the neighboring tiles
-def scrap_around(tile)
-  neighbors = [
-    { x: tile[:x] - 1, y: tile[:y] },
-    { x: tile[:x] + 1, y: tile[:y] },
-    { x: tile[:x], y: tile[:y] - 1 },
-    { x: tile[:x], y: tile[:y] + 1 },
-  ]
-
-  neighbors.all? do |neighbor|
-    neighbor[:scrap_amount] >= 1
+def opp_not_far(opp_tiles, my_tiles)
+  close_tiles = []
+  opp_tiles.each do |opp_tile|
+    my_tiles.each do |my_tile|
+      if (my_tile[:x] - opp_tile[:x]).abs + (my_tile[:y] - opp_tile[:y]).abs <= 2
+        close_tiles << my_tile
+      end
+    end
   end
+  return close_tiles
+end
+
+# Check if I have scrap in the current tile and the neighboring tiles
+def scrap_around(tiles, tile)
+  total_scrap_amount = 0
+  tiles.each do |t|
+    if ((t[:x] == tile[:x] && t[:y] == tile[:y] + 1) ||
+        (t[:x] == tile[:x] && t[:y] == tile[:y] - 1) ||
+        (t[:y] == tile[:y] && t[:x] == tile[:x] + 1) ||
+        (t[:y] == tile[:y] && t[:x] == tile[:x] - 1) ||
+        (t[:x] == tile[:x] && t[:y] == tile[:y]))
+      total_scrap_amount += t[:scrap_amount]
+    end
+  end
+  return total_scrap_amount >= 3
 end
 
 # Check if x is in the second column
 def in_second_column(height, width, x)
   x == 1 || x == width - 2 ? true : false
->>>>>>> c2c671b345c62506bbff1a9de33c4c35455eabc2
+end
+
+# Set targets for all my units
+# def set_target(my_units, opp_units, opp_is_close, width, height)
+#   if opp_is_close.empty?
+#     my_units.each { |unit| unit[:tx], unit[:ty] = tx, ty }
+#   else
+#     half = my_units.length / 2
+#     top_half = my_units[0..half - 1]
+#     bottom_half = my_units[half..-1]
+#     if my_units.first[:x] > width/2
+#       top_half.each { |unit| unit[:tx], unit[:ty] = 2, 0 }
+#       bottom_half.each { |unit| unit[:tx], unit[:ty] = 2, height - 1 }
+#     else
+#       top_half.each { |unit| unit[:tx], unit[:ty] = width - 3, 0 }
+#       bottom_half.each { |unit| unit[:tx], unit[:ty] = width - 3, height - 1 }
+#     end
+#   end
+# end
+
+def set_target(my_units, opp_units, opp_is_close, width, height)
+  if opp_is_close.empty?
+    my_units.each do |my_unit|
+      min_dist = nil
+      opp_unit = nil
+      opp_units.each do |opp_unit_pos|
+        distance = Math.sqrt((my_unit[:x] - opp_unit_pos[:x])**2 + (my_unit[:y] - opp_unit_pos[:y])**2)
+        if min_dist.nil? || distance < min_dist
+          min_dist = distance
+          opp_unit = opp_unit_pos
+        end
+      end
+      my_unit[:tx], my_unit[:ty] = opp_unit[:x], opp_unit[:y]
+    end
+  else
+    half = my_units.length / 2
+    top_half = my_units[0..half - 1]
+    bottom_half = my_units[half..-1]
+    if my_units.first[:x] > width/2
+      top_half.each { |unit| unit[:tx], unit[:ty] = 2, 0 }
+      bottom_half.each { |unit| unit[:tx], unit[:ty] = 2, height - 1 }
+    else
+      top_half.each { |unit| unit[:tx], unit[:ty] = width - 3, 0 }
+      bottom_half.each { |unit| unit[:tx], unit[:ty] = width - 3, height - 1 }
+    end
+  end
 end
 
 ME = 1
@@ -62,18 +106,11 @@ OPP = 0
 NONE = -1
 
 width, height = gets.split.map &:to_i
-<<<<<<< HEAD
-rolespawn = 0
-# game loop
-loop {
-  rolespawn += 1
-=======
-role = 0
+role_glob = -1
 
 # game loop
 loop {
-  role += 1
->>>>>>> c2c671b345c62506bbff1a9de33c4c35455eabc2
+  role_glob += 1
   tiles = []
   my_units = []
   opp_units = []
@@ -101,28 +138,11 @@ loop {
      }
 
      tiles.append(tile)
-     $tiles = tiles
      if tile[:owner] == ME
          my_tiles.append(tile)
          if tile[:units] > 0
-            far = farthest(width, height, tile[:x], tile[:y])
-            tile[:tx] = far[:x]
-            tile[:ty] = far[:y]
-<<<<<<< HEAD
-            tile[:x] == 0 ? (tile[:tx] = 0; tile[:ty] = height - 1) : false
-            tile[:y] == height - 1 ? (tile[:tx] = height - 1; tile[:ty] = width - 1) : false
-            tile[:x] == width - 1 ? (tile[:tx] = width - 1; tile[:ty] = 0) : false
-            tile[:y] == 0 ? (tile[:tx] = 0; tile[:ty] = 0) : false
-            my_units.append(tile)
-         elsif tile[:recycler]
-=======
-            tile[:x] == 0 && tile[:y] != height - 1 ? (tile[:tx] = 0; tile[:ty] = height - 1) : false
-            tile[:y] == height - 1 && tile[:x] != width - 1 ? (tile[:tx] = width - 1; tile[:ty] = height - 1) : false
-            tile[:x] == width - 1 && tile[:y] != 0 ? (tile[:tx] = width - 1; tile[:ty] = 0) : false
-            tile[:y] == 0 && tile[:x] != 0 ? (tile[:tx] = 0; tile[:ty] = 0) : false
             my_units.append(tile)
          elsif tile[:recycler] == 1
->>>>>>> c2c671b345c62506bbff1a9de33c4c35455eabc2
              my_recyclers.append(tile)
          end
      elsif tile[:owner] == OPP
@@ -137,105 +157,78 @@ loop {
      end
     }
   }
-<<<<<<< HEAD
-
+  if role_glob == 0
+    $opp_units_initial = opp_units
+  end
   actions = []
-
-  my_tiles.each { |tile|
-    role += 1
-    if tile[:can_spawn]
-      if !tile[:units] && my_matter >= 10
-        amount = 1
-      else
-        amount = 0
-      end
-
-      if amount > 0
-          actions<<"SPAWN #{amount} #{tile[:x]} #{tile[:y]}"
-          my_matter -= 10
-      end
-    end
-    if tile[:can_build]
-        if if_scrap_around(tile[:x], tile[:y])
-=======
-  built = false
-  spawned = false
-  actions = []
+  my_robots = my_units.map { |t| t[:units] }.sum
+  opp_robots = opp_units.map { |t| t[:units] }.sum
   first_opp = opp_tiles.first
   opp_is_close = opp_is_close(opp_tiles, my_tiles)
+  opp_not_far = opp_not_far(opp_tiles, my_tiles)
+  set_target(my_tiles, $opp_units_initial, opp_not_far, width, height)
+  builds = 0
+  role = 0
+  built = builds > 0
+  matter_for_units = my_matter / 10
   my_tiles.each { |tile|
+    spawned = false
     x = tile[:x]
     y = tile[:y]
-    if tile[:can_spawn] && (tile[:units] == 0 || my_tiles.count < 4 || [x, y] == [width / 2, height / 2])
-      if my_matter >= 10 && !tile[:in_range_of_recycler] && !opp_is_close.include?(tile)
-        if opp_is_close.any? && my_matter > opp_is_close.count * 10
-          amount = (my_matter / 10) - (opp_is_close.count * 10)
-        else
-          amount = my_matter / 10
+    units = tile[:units] > 0
+    no_units = tile[:units] == 0
+    tile_near_opp = opp_is_close.any?(tile)
+    in_second_column = in_second_column(height, width, x)
+    scrap_around = scrap_around(tiles, tile)
+    build_here = scrap_around && tile_in_tail
+    build_here && tile[:can_build] ? built = true : built = false
+    my_empty_tiles = my_tiles.select { |t| t[:units] == 0 }
+    empty_count = my_empty_tiles.count
+    if tile[:can_spawn]
+      amount = 0
+      if matter_for_units > 1 && ((role % 5 == 4) || my_units.count <= 4)
+        if no_units
+          amount = [matter_for_units / my_units.count, 1].min
+        elsif built || my_robots < opp_robots
+          amount = matter_for_units / my_units.count - 1
         end
-      else
-        amount = 0
       end
       if amount > 0
           actions<<"SPAWN #{amount} #{tile[:x]} #{tile[:y]}"
-          my_matter -= amount
+          matter_for_units -= amount
           spawned = true
       end
     end
-    x_in_second = in_second_column(height, width, x)
-    build_here = my_tiles.select { |t| opp_is_close.include?(t) || (!opp_is_close.any? && x_in_second && scrap_around(t)) }
-    if tile[:can_build] && tile in build_here
-        if my_matter >= 10
->>>>>>> c2c671b345c62506bbff1a9de33c4c35455eabc2
+    if tile[:can_build] && !spawned && build_here && role_glob % 10 == 1
+        if matter_for_units > 0
           should_build = true
         else
           should_build = false
         end
         if should_build
             actions<<"BUILD #{tile[:x]} #{tile[:y]}"
-<<<<<<< HEAD
-            delete_tile(tile[:x], tile[:y], my_units)
-        end
-    end
-  }
-  my_units.each { |tile|
-    # TODO: pick a destination tile
-    target = { x: tile[:tx], y: tile[:ty] }
-    units = tile[:units]
-    if target
-      amount = units
-=======
-            built = true
+            builds += 1
+            tile[:built] = 1
             my_matter -= 10
         end
     end
-  }
-
-  r = 0
-  my_units.each { |tile|
-    # TODO: pick a destination tile
-    r += 1
-    x = tile[:x]
-    y = tile[:y]
-    if (role % 6 == 4) && x != 0 && y != 0
-      [tile[:tx], tile[:ty]] != [x, 0] ? (tile[:tx] = x; tile[:ty] = 0) : false
-    elsif (role % 6 == 1) && x != 0 && y != 0
-      [tile[:tx], tile[:ty]] != [x, height - 1] ? (tile[:tx] = x; tile[:ty] = height - 1) : false
-    end
-    if tile[:in_range_of_recycler]
-      tile[:tx] = farthest(width, height, first_opp[:x], first_opp[:y])[:x]
-      tile[:ty] = farthest(width, height, first_opp[:x], first_opp[:y])[:y]
-    end
     target = { x: tile[:tx], y: tile[:ty] }
-    units = tile[:units]
-    if target && !built && !spawned
-      units / 2 > 0 ? amount = units / 2 : amount = units
->>>>>>> c2c671b345c62506bbff1a9de33c4c35455eabc2
-      if amount > 0
+    if units && target && !spawned && !tile[:built]
+      amount = [tile[:units], 2].min
+      if amount > 0 && target
+        if [x, y] == [tile[:tx], tile[:ty]]
+          # Change target when unit is already in the rarget
+          target[:x] += 1
+        elsif role_glob % 2 == 0 && role % 5 in [2, 3]
+          amount= 1
+          target[:x], target[:y] = x + [1, -1].shuffle.first, y + [1, -1].shuffle.first
+        end
         actions<<"MOVE #{amount} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
       end
     end
+    role += 1
   }
+
   # To debug: STDERR.puts "Debug messages..."
   puts actions.size > 0 ? actions*";" : "WAIT"
 }
