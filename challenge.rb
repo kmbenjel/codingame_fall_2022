@@ -119,6 +119,7 @@ loop {
      scrap_amount, owner, units, recycler, can_build, can_spawn, in_range_of_recycler = gets.split.map &:to_i
      tile = {
        scrap_amount: scrap_amount,
+       scrap?: scrap_amount > 0,
        owner: owner,
        units: units,
        recycler: recycler,
@@ -148,7 +149,7 @@ loop {
          end
      else
          neutral_tiles.append(tile)
-         tile[:reachable] = true
+         tile[:scrap?] ? tile[:reachable] = true
      end
     }
     # PARSING DONE
