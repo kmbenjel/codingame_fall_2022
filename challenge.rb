@@ -66,9 +66,6 @@ loop {
   actions = []
   my_robots = my_units.map { |t| t[:units] }.sum
   opp_robots = opp_units.map { |t| t[:units] }.sum
-  first_opp = opp_tiles.first
-  opp_is_close = opp_is_close(opp_tiles, my_tiles)
-  opp_not_far = opp_not_far(opp_tiles, my_tiles)
   role = 0
   builds = 0
   matter_for_units = my_matter / 10
@@ -158,5 +155,6 @@ loop {
   }
 
   # To debug: STDERR.puts "Debug messages..."
+  STDERR.puts "1337 Benguerir"
   puts actions.size > 0 ? actions*";" : "WAIT"
 }
