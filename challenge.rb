@@ -1,24 +1,6 @@
 STDOUT.sync = true # DO NOT REMOVE
 
-# Find the farthest point in the field
-def farthest(w, h, x, y)
-  far_x = x > w/2 ? 0 : w
-  far_y = y > h/2 ? 0 : h
-  { x: far_x, y: far_y }
-end
 
-# Collect my tiles neighboring the opponent tiles
-def opp_is_close(opp_tiles, my_tiles)
-  close_tiles = []
-  opp_tiles.each do |opp_tile|
-    my_tiles.each do |my_tile|
-      if (my_tile[:x] - opp_tile[:x]).abs + (my_tile[:y] - opp_tile[:y]).abs == 1
-        close_tiles << my_tile
-      end
-    end
-  end
-  return close_tiles
-end
 
 #ABCD
 #ALLAH
