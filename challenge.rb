@@ -63,9 +63,6 @@ loop {
     # PARSING DONE
   }
 
-  if role_glob == 0
-    $opp_units_initial = opp_units
-  end
   actions = []
   my_robots = my_units.map { |t| t[:units] }.sum
   opp_robots = opp_units.map { |t| t[:units] }.sum
