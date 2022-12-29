@@ -1,20 +1,5 @@
 STDOUT.sync = true # DO NOT REMOVE
 
-
-
-#ABCD
-#ALLAH
-
-
-
-
-
-
-# Check if x is in the second column
-def in_second_column(height, width, x)
-  x == 1 || x == width - 2 ? true : false
-end
-
 # Set targets for all my units
 def set_target(my_units, width, height)
   # if opp_is_close.empty?
