@@ -10,3 +10,17 @@ def neighbor(tile, tiles)
   neighbors
 end
 
+
+
+def neighbors(tiles, my_tile)
+  result = []
+  tiles.each do |tile|
+    if tile[:x] == my_tile[:x] && (tile[:y] == my_tile[:y] + 1 || tile[:y] == my_tile[:y] - 1)
+      result << tile
+    elsif tile[:y] == my_tile[:y] && (tile[:x] == my_tile[:x] + 1 || tile[:x] == my_tile[:x] - 1)
+      result << tile
+    end
+  end
+  result
+end
+

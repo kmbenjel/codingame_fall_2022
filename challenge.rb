@@ -1,5 +1,5 @@
 STDOUT.sync = true # DO NOT REMOVE
-#EEE
+
 ME = 1
 OPP = 0
 NONE = -1
@@ -29,8 +29,9 @@ loop {
        scrap_amount: scrap_amount,
        scrap?: scrap_amount > 0,
        owner: owner,
+       units?: units > 0,
        units: units,
-       recycler: recycler,
+       recycler: recycler==1,
        can_build: can_build==1,
        can_spawn: can_spawn==1,
        in_range_of_recycler: in_range_of_recycler==1,
@@ -64,8 +65,8 @@ loop {
   }
 
   actions = []
-  my_robots = my_units.map { |t| t[:units] }.sum
-  opp_robots = opp_units.map { |t| t[:units] }.sum
+  my_robots_count = my_units.map { |t| t[:units] }.sum
+  opp_robots_count = opp_units.map { |t| t[:units] }.sum
   role = 0
   builds = 0
   matter_for_units = my_matter / 10
@@ -100,7 +101,7 @@ loop {
           amount = kill_opp
         elsif no_units && opp_not_far(opp_near, [tile])
           amount = 1
-        elsif builds > 0 || my_robots < opp_robots
+        elsif builds >
           matter_for_units == 1 ? amount = 1 : false
         end
       end
@@ -125,7 +126,6 @@ loop {
             my_matter -= 10
         end
     end
-    set_target(my_tiles, width, height)
     target = { x: tile[:tx], y: tile[:ty] }
     if units && target && !spawned && !tile[:built]
       neighbors = neighbor(tile, my_tiles)
