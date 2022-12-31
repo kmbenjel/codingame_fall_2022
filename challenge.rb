@@ -1,5 +1,5 @@
 STDOUT.sync = true # DO NOT REMOVE
-
+#EEE
 ME = 1
 OPP = 0
 NONE = -1
