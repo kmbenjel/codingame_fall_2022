@@ -24,7 +24,7 @@ loop {
     width.times { |x|
      # owner: 1 = me, 0 = foe, -1 = neutral
      scrap_amount, owner, units, recycler, can_build, can_spawn, in_range_of_recycler = gets.split.map &:to_i
-     puts x
+
      tile = {
        scrap_amount: scrap_amount,
        scrap?: scrap_amount > 0,
@@ -38,6 +38,7 @@ loop {
        x: x,
        y: y
      }
+
 
      tiles.append(tile)
      if tile[:owner] == ME
@@ -65,8 +66,17 @@ loop {
   }
 
   actions = []
+
+  ###   USEFUL VARIABLES    ###
+
   my_robots_count = my_units.map { |t| t[:units] }.sum
   opp_robots_count = opp_units.map { |t| t[:units] }.sum
+  my_recyclers_count = my_recyclers.count
+  opp_recyclers_count = opp_recyclers.count
+  my_tiles_count = my_tiles.count
+  opp_tiles_count = opp_tiles.count
+  my_empty_tiles = my_tiles.select { |t| t[:units] == 0 }
+
   role = 0
   builds = 0
   matter_for_units = my_matter / 10
@@ -80,50 +90,21 @@ loop {
     in_second_column = in_second_column(height, width, x)
     scrap_around = scrap_around(tiles, tile)
     opp_near = neighbor(tile, opp_tiles)
-    build_here = scrap_around && tile[:in_range_of_recycler]
-    my_empty_tiles = my_tiles.select { |t| t[:units] == 0 }
     empty_count = my_empty_tiles.count
-    if tile[:can_spawn]
-      amount = 0
-      kill_opp = 0
-      if opp_near.any?
-        avail = matter_for_units
-        opp_near.each do |opp|
-          while opp[:units] >= tile[:units] - 1 && avail > 0
-            kill_opp += 1
-            avail -= 1
-          end
-        end
-      end
 
-      if matter_for_units > 1 && ((kill_opp > 0 || role % 7 == 6 || my_units.count <= 4))
-        if kill_opp > 0
-          amount = kill_opp
-        elsif no_units && opp_not_far(opp_near, [tile])
-          amount = 1
-        elsif builds >
-          matter_for_units == 1 ? amount = 1 : false
-        end
-      end
+    if tile[:can_spawn]
 
       if amount > 0
-          actions<<"SPAWN #{amount} #{tile[:x]} #{tile[:y]}"
-          matter_for_units -= amount
-          spawned = true
+          actions << "SPAWN #{amount} #{x} #{y}"
+
       end
     end
 
     if tile[:can_build] && !spawned && build_here
-        if matter_for_units > 0
-          should_build = true
-        else
-          should_build = false
-        end
+
         if should_build
-            actions<<"BUILD #{tile[:x]} #{tile[:y]}"
-            builds += 1
-            tile[:built] = 1
-            my_matter -= 10
+            actions << "BUILD #{x} #{y}"
+
         end
     end
     target = { x: tile[:tx], y: tile[:ty] }
@@ -148,7 +129,7 @@ loop {
           end
           target[:y] = x + [1, -1].shuffle.first, y + [1, -1].shuffle.first
         end
-        actions<<"MOVE #{amount} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
+        actions << "MOVE #{amount} #{x} #{y} #{tx} #{ty}"
       end
     end
     role += 1
