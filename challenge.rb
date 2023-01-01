@@ -7,7 +7,8 @@ NONE = -1
 width, height = gets.split.map &:to_i
 role_glob = -1
 
-# game loop
+###   GAME LOOP   ####
+
 loop {
   role_glob += 1
   tiles = []
@@ -22,7 +23,7 @@ loop {
   my_matter, opp_matter = gets.split.map &:to_i
   height.times { |y|
     width.times { |x|
-     # owner: 1 = me, 0 = foe, -1 = neutral
+
      scrap_amount, owner, units, recycler, can_build, can_spawn, in_range_of_recycler = gets.split.map &:to_i
 
      tile = {
@@ -49,7 +50,7 @@ loop {
          my_tiles.append(tile)
          if tile[:units] > 0
             my_units.append(tile)
-            tile[:reachable] = true
+
          elsif tile[:recycler] == 1
              my_recyclers.append(tile)
          end
@@ -57,21 +58,23 @@ loop {
          opp_tiles.append(tile)
          if tile[:units] > 0
              opp_units.append(tile)
-             tile[:reachable] = true
+
          elsif tile[:recycler] == 1
              opp_recyclers.append(tile)
          end
      else
          neutral_tiles.append(tile)
-         tile[:scrap?] ? tile[:reachable] = true : false
+
      end
     }
     # PARSING DONE
   }
 
+  ###   COLLECT ACTIONS   ###
+
   actions = []
 
-  ###   USEFUL VARIABLES    ###
+  # USEFUL VARIABLES
 
   my_robots_count = my_units.map { |t| t[:units] }.sum
   opp_robots_count = opp_units.map { |t| t[:units] }.sum
@@ -85,7 +88,6 @@ loop {
   builds = 0
   matter_for_units = my_matter / 10
   my_tiles.each { |tile|
-    spawned = false
     x = tile[:x]
     y = tile[:y]
     units = tile[:units] > 0
@@ -97,10 +99,8 @@ loop {
     empty_count = my_empty_tiles.count
 
     if tile[:can_spawn]
-
       if amount > 0
           actions << "SPAWN #{amount} #{x} #{y}"
-
       end
     end
 
@@ -143,3 +143,5 @@ loop {
   STDERR.puts "1337 Benguerir"
   puts actions.size > 0 ? actions*";" : "WAIT"
 }
+
+## OTHMAN
