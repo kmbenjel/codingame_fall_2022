@@ -28,7 +28,11 @@ loop {
      tile = {
        scrap_amount: scrap_amount,
        scrap?: scrap_amount > 0,
+       grass?: scrap_amount == 0,
        owner: owner,
+       mine: owner == 1,
+       theirs: owner == 0,
+       neutral: owner == -1,
        units?: units > 0,
        units: units,
        recycler: recycler==1,
