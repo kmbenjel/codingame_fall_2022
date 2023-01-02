@@ -36,7 +36,7 @@ loop {
        neutral: owner == -1,
        units?: units > 0,
        units: units,
-       recycler: recycler==1,
+       recycler?: recycler==1,
        can_build: can_build==1,
        can_spawn: can_spawn==1,
        in_range_of_recycler: in_range_of_recycler==1,
@@ -51,7 +51,7 @@ loop {
          if tile[:units] > 0
             my_units.append(tile)
 
-         elsif tile[:recycler] == 1
+         elsif tile[:recycler?]
              my_recyclers.append(tile)
          end
      elsif tile[:owner] == OPP
@@ -59,7 +59,7 @@ loop {
          if tile[:units] > 0
              opp_units.append(tile)
 
-         elsif tile[:recycler] == 1
+         elsif tile[:recycler?]
              opp_recyclers.append(tile)
          end
      else
