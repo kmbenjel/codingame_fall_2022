@@ -72,22 +72,6 @@ def separate_cols(tiles, width)
   columns
 end
 
-# def first_initial_unit(my_units, opp_units)
-#   max_distance = 0
-#   furthest_my_unit = nil
-#   my_units.each do |my_unit|
-#     total_distance = 0
-#     opp_units.each do |opp_unit|
-#       total_distance += (my_unit[:x] - opp_unit[:x]).abs + (my_unit[:y] - opp_unit[:y]).abs
-#     end
-#     if total_distance > max_distance
-#       max_distance = total_distance
-#       furthest_my_unit = my_unit
-#     end
-#   end
-#   furthest_my_unit
-# end
-
 def first_initial_unit(tiles)
   initial_unit_x = nil
   initial_unit_y = nil
@@ -224,13 +208,13 @@ loop {
           nearest_of_owner(tiles, tile, width, height, OPP)
         end
         if target && amount > 0
-          actions<<"MOVE #{amount} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
+          actions << "MOVE #{amount} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
         end
       else
         opp_empty = opp_tiles.select { |opp| opp[:units] == 0 }
         target = nearest_of_owner(tiles, tile, width, height, OPP)
         if target && amount > 0
-          actions<<"MOVE #{amount} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
+          actions << "MOVE #{amount} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
         end
       end
     else
@@ -246,7 +230,7 @@ loop {
           target = nearest_of_owner(tiles, tile, width, height, OPP)
         end
         if target
-          actions<<"MOVE #{1} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
+          actions << "MOVE #{1} #{tile[:x]} #{tile[:y]} #{target[:x]} #{target[:y]}"
         end
         amount -= 1
       end
