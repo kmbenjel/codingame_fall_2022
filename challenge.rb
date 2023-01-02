@@ -6,6 +6,7 @@ NONE = -1
 
 width, height = gets.split.map &:to_i
 role_glob = -1
+spawn_here = []
 
 ###   GAME LOOP   ####
 
@@ -19,6 +20,7 @@ loop {
   opp_tiles = []
   my_tiles = []
   neutral_tiles = []
+
 
   my_matter, opp_matter = gets.split.map &:to_i
   height.times { |y|
