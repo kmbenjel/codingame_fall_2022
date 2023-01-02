@@ -140,7 +140,7 @@ loop {
   }
 
   # To debug: STDERR.puts "Debug messages..."
-  STDERR.puts "1337 Benguerir"
+  STDERR.puts ""
   puts actions.size > 0 ? actions*";" : "WAIT"
 }
 
