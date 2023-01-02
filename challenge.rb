@@ -80,10 +80,6 @@ loop {
 
   my_robots_count = my_units.map { |t| t[:units] }.sum
   opp_robots_count = opp_units.map { |t| t[:units] }.sum
-  my_recyclers_count = my_recyclers.count
-  opp_recyclers_count = opp_recyclers.count
-  my_tiles_count = my_tiles.count
-  opp_tiles_count = opp_tiles.count
   my_empty_tiles = my_tiles.select { |t| t[:units] == 0 }
 
   role = 0
