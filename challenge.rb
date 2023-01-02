@@ -140,8 +140,7 @@ loop {
   }
 
   # To debug: STDERR.puts "Debug messages..."
-  STDERR.puts ""
+  STDERR.puts "\u{1F91D}"
   puts actions.size > 0 ? actions*";" : "WAIT"
 }
 
-## OTHMAN
