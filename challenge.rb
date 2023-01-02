@@ -7,6 +7,26 @@ NONE = -1
 width, height = gets.split.map &:to_i
 role_glob = -1
 spawn_here = []
+build_history = []
+dir = nil
+
+def first_initial_unit(tiles)
+  initial_unit_x = nil
+  initial_unit_y = nil
+  tiles.each do |tile|
+    if tile[:units] > 0
+      if initial_unit_x.nil? || tile[:x] < initial_unit_x
+        initial_unit_x = tile[:x]
+        initial_unit_y = tile[:y]
+      elsif tile[:x] == initial_unit_x && tile[:y] > initial_unit_y
+        initial_unit_y = tile[:y]
+      end
+    end
+  end
+
+  tiles.find { |t| t[:x] == initial_unit_x && t[:y] == initial_unit_y }
+end
+
 
 ###   GAME LOOP   ####
 
@@ -82,6 +102,9 @@ loop {
   opp_robots_count = opp_units.map { |t| t[:units] }.sum
   my_empty_tiles = my_tiles.select { |t| t[:units] == 0 }
 
+  # KNOW DIRECTION
+  first_initial_unit(tiles)[:x] < width / 2 ? dir = 1 : dir = -1
+
   role = 0
   builds = 0
   matter_for_units = my_matter / 10
@@ -96,19 +119,27 @@ loop {
     opp_near = neighbor(tile, opp_tiles)
     empty_count = my_empty_tiles.count
 
+    ###   BUILD   ###
+    should_build = nil
+    if tile[:can_build]
+
+      # SHOULD BUILD?
+      build_conditions = [
+        
+      ]
+
+      build_conditions.all? should_build = 1 : should_build = 0
+      if should_build
+        actions << "BUILD #{x} #{y}"
+      end
+    end
     if tile[:can_spawn]
       if amount > 0
           actions << "SPAWN #{amount} #{x} #{y}"
       end
     end
 
-    if tile[:can_build] && !spawned && build_here
 
-        if should_build
-            actions << "BUILD #{x} #{y}"
-
-        end
-    end
     target = { x: tile[:tx], y: tile[:ty] }
     if units && target && !spawned && !tile[:built]
       neighbors = neighbor(tile, my_tiles)

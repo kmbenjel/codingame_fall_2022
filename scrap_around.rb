@@ -1,5 +1,5 @@
 # Check if I have scrap in the current tile and the neighboring tiles
-def scrap_around(tiles, tile)
+def scrap_around(tiles, tile, scrap)
   total_scrap_amount = 0
   tiles.each do |t|
     if ((t[:x] == tile[:x] && t[:y] == tile[:y] + 1) ||
@@ -10,5 +10,5 @@ def scrap_around(tiles, tile)
       total_scrap_amount += t[:scrap_amount]
     end
   end
-  return total_scrap_amount >= 3
+  return total_scrap_amount >= 40
 end
