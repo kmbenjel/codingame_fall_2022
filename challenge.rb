@@ -10,6 +10,21 @@ spawn_here = []
 build_history = []
 dir = nil
 
+# Check if I have scrap in the current tile and the neighboring tiles
+def scrap_around(tiles, tile, scrap)
+  total_scrap_amount = 0
+  tiles.each do |t|
+    if ((t[:x] == tile[:x] && t[:y] == tile[:y] + 1) ||
+        (t[:x] == tile[:x] && t[:y] == tile[:y] - 1) ||
+        (t[:y] == tile[:y] && t[:x] == tile[:x] + 1) ||
+        (t[:y] == tile[:y] && t[:x] == tile[:x] - 1) ||
+        (t[:x] == tile[:x] && t[:y] == tile[:y]))
+      total_scrap_amount += t[:scrap_amount]
+    end
+  end
+  return total_scrap_amount >= scrap
+end
+
 def first_initial_unit(tiles)
   initial_unit_x = nil
   initial_unit_y = nil
@@ -27,6 +42,40 @@ def first_initial_unit(tiles)
   tiles.find { |t| t[:x] == initial_unit_x && t[:y] == initial_unit_y }
 end
 
+def tile_near_owner(neighbors, owner)
+  neighbors.any? { |neighbor| neighbor[:owner] == OWNER}
+end
+
+def nearest_of_owner(tiles, my_tile, width, height, owner)
+  tiles_of_owner = tiles.select { |tile| tile[:scrap_amount] > 0 && tile[:owner] == owner }
+  return nil if tiles_of_owner.empty?
+
+  min_dist = nil
+  result = nil
+
+  tiles_of_owner.each do |tile|
+    dist = (my_tile[:x] - tile[:x]).abs + (my_tile[:y] - tile[:y]).abs
+
+    if min_dist.nil? || dist < min_dist
+      min_dist = dist
+      result = { x: tile[:x], y: tile[:y] }
+    end
+  end
+
+  result
+end
+
+def neighbors(tiles, my_tile)
+  result = []
+  tiles.each do |tile|
+    if tile[:x] == my_tile[:x] && (tile[:y] == my_tile[:y] + 1 || tile[:y] == my_tile[:y] - 1)
+      result << tile
+    elsif tile[:y] == my_tile[:y] && (tile[:x] == my_tile[:x] + 1 || tile[:x] == my_tile[:x] - 1)
+      result << tile
+    end
+  end
+  result
+end
 
 ###   GAME LOOP   ####
 
@@ -50,15 +99,15 @@ loop {
 
      tile = {
        scrap_amount: scrap_amount,
-       scrap?: scrap_amount > 0,
-       grass?: scrap_amount == 0,
+       any_scrap: scrap_amount > 0,
+       grass: scrap_amount == 0,
        owner: owner,
        mine: owner == 1,
        theirs: owner == 0,
        neutral: owner == -1,
-       units?: units > 0,
-       units: units,
-       recycler?: recycler==1,
+       units: units > 0,
+       any_units: units,
+       recycler: recycler==1,
        can_build: can_build==1,
        can_spawn: can_spawn==1,
        in_range_of_recycler: in_range_of_recycler==1,
@@ -70,18 +119,18 @@ loop {
      tiles.append(tile)
      if tile[:owner] == ME
          my_tiles.append(tile)
-         if tile[:units] > 0
+         if tile[:any_units]
             my_units.append(tile)
 
-         elsif tile[:recycler?]
+         elsif tile[:recycler]
              my_recyclers.append(tile)
          end
      elsif tile[:owner] == OPP
          opp_tiles.append(tile)
-         if tile[:units] > 0
+         if tile[:any_units]
              opp_units.append(tile)
 
-         elsif tile[:recycler?]
+         elsif tile[:recycler]
              opp_recyclers.append(tile)
          end
      else
@@ -102,70 +151,94 @@ loop {
   opp_robots_count = opp_units.map { |t| t[:units] }.sum
   my_empty_tiles = my_tiles.select { |t| t[:units] == 0 }
 
+
   # KNOW DIRECTION
   first_initial_unit(tiles)[:x] < width / 2 ? dir = 1 : dir = -1
 
-  role = 0
+  role = -1
   builds = 0
   matter_for_units = my_matter / 10
+
+  ###   ACTIONS LOOP    ###
   my_tiles.each { |tile|
+
+    role += 1
+
     x = tile[:x]
     y = tile[:y]
-    units = tile[:units] > 0
-    no_units = tile[:units] == 0
-    tile_near_opp = opp_is_close.any?(tile)
-    in_second_column = in_second_column(height, width, x)
-    scrap_around = scrap_around(tiles, tile)
-    opp_near = neighbor(tile, opp_tiles)
-    empty_count = my_empty_tiles.count
+
+    any_units = tile[:units] > 0
+    any_matter = matter_for_units > 0
+    no_units = !tile[:any_units]
+    neighbors = neigbors(tiles, tile)
+
 
     ###   BUILD   ###
     should_build = nil
-    if tile[:can_build]
+    if tile[:can_build] && any_matter
 
       # SHOULD BUILD?
-      build_conditions = [
-        
+      build_back = [
+        role_glob <= 10,
+        scrap_around(tiles, tile, 40),
+        x < width / 2,
+        y < height - 2 && y > 2,
+        neigbors.any? { |n| n[:mine] && n[:any_units] },
+        neigbors.all { |n| !n[:recycler]},
+        role % 3 == 2
       ]
 
-      build_conditions.all? should_build = 1 : should_build = 0
+      build_ahead = [
+        neigbors.any? { |n| n[:units?] && n[:theirs] }
+      ]
+
+      build_conditions = build_back.all || build_ahead.all
+      build_conditions ? should_build = true : false
+
+      # BUILD ACTION
       if should_build
         actions << "BUILD #{x} #{y}"
+        matter_for_units -= 1
+        tile[:built] = true
       end
     end
-    if tile[:can_spawn]
+
+    ###   SPAWN    ###
+
+    if tile[:can_spawn] && any_matter
+      spawn_here = my_tiles.select {|t| t[:any_units] && neigbors(tiles, t).any? { |n| n[:theirs] && n[:any_units] } }
+      amount = matter_for_units
+      while amount > 0 && spawn_here.any? do
+          sample = spawn_here.sample
+          sx, sy = sample[:x], sample[:y]
+          actions << "SPAWN #{1} #{sx} #{sy}"
+          amount -= 1
+          spawn_here.delete(sample)
+      end
+
       if amount > 0
-          actions << "SPAWN #{amount} #{x} #{y}"
+         actions << "SPAWN #{amount} #{x} #{y}"
       end
     end
 
 
-    target = { x: tile[:tx], y: tile[:ty] }
-    if units && target && !spawned && !tile[:built]
-      neighbors = neighbor(tile, my_tiles)
-      amount = 1 #[tile[:units], 2].min
-      if amount > 0 && target
-        if [x, y] == [tile[:tx], tile[:ty]]
-          empty = neighbors.select { |t| t[:units] == 0 }.shuffle
-          neighbor = neighbors.select { |t| t[:reachable] }.shuffle
-          any_empty = empty.any?
-          any_neighbor = neighbor.any?
-          if any_empty
-            target[:x], target[:y] = empty.first[:x], empty.first[:y]
-          elsif any_neighbor
-            target[:x], target[:y] = neighbor.first[:x], neighbor.first[:y]
-          end
-        end
-        if tile_near_opp && role_glob % 4 == 0 && (role % 5 in [2, 3]) && tile[:x] in [1, 2]
-          if target[:x] != x + [1, -1].shuffle.first
-            target[:x] = x + [1, -1].shuffle.first
-          end
-          target[:y] = x + [1, -1].shuffle.first, y + [1, -1].shuffle.first
+    ###   MOVE    ###
+
+    if units && !tile[:built]
+
+      amount = 0
+      neighbors = neighbors(tiles, tile)
+      tile_near_opp = tile_near_owner(neigbors, OPP)
+      opp_neighbor_units = neigbors.select { |n| n[:theirs] && n[:any_units] }
+      if tile_near_opp
+        if opp_neighbor_units.any?
+
         end
         actions << "MOVE #{amount} #{x} #{y} #{tx} #{ty}"
+      else
       end
     end
-    role += 1
+
   }
 
   # To debug: STDERR.puts "Debug messages..."

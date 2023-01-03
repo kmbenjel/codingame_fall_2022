@@ -10,5 +10,5 @@ def scrap_around(tiles, tile, scrap)
       total_scrap_amount += t[:scrap_amount]
     end
   end
-  return total_scrap_amount >= 40
+  return total_scrap_amount >= scrap
 end
