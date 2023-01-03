@@ -10,6 +10,18 @@ spawn_here = []
 build_history = []
 dir = nil
 
+def nearest_ext(tiles, tile, width, height)
+  # select all tiles from the same column
+  column_tiles = tiles.select { |t| t[:x] == tile[:x] }
+  # select the extreme tiles
+  extreme_tiles = column_tiles.select do |t|
+    t[:y] == 0 || t[:y] == height - 1
+  end
+  # find the nearest extreme tile
+  nearest = extreme_tiles.min_by { |t| (t[:y] - tile[:y]).abs }
+  nearest
+end
+
 # Check if I have scrap in the current tile and the neighboring tiles
 def scrap_around(tiles, tile, scrap)
   total_scrap_amount = 0
@@ -43,7 +55,7 @@ def first_initial_unit(tiles)
 end
 
 def tile_near_owner(neighbors, owner)
-  neighbors.any? { |neighbor| neighbor[:owner] == OWNER}
+  neighbors.any? { |neighbor| neighbor[:owner] == owner}
 end
 
 def nearest_of_owner(tiles, my_tile, width, height, owner)
@@ -105,7 +117,7 @@ loop {
        mine: owner == 1,
        theirs: owner == 0,
        neutral: owner == -1,
-       units: units > 0,
+       units: units,
        any_units: units,
        recycler: recycler==1,
        can_build: can_build==1,
@@ -170,7 +182,7 @@ loop {
     any_units = tile[:units] > 0
     any_matter = matter_for_units > 0
     no_units = !tile[:any_units]
-    neighbors = neigbors(tiles, tile)
+    neighbors = neighbors(tiles, tile)
 
 
     ###   BUILD   ###
@@ -179,20 +191,20 @@ loop {
 
       # SHOULD BUILD?
       build_back = [
-        role_glob <= 10,
+        role_glob <= 20,
         scrap_around(tiles, tile, 40),
         x < width / 2,
         y < height - 2 && y > 2,
-        neigbors.any? { |n| n[:mine] && n[:any_units] },
-        neigbors.all { |n| !n[:recycler]},
+        neighbors.any? { |n| n[:mine] && n[:any_units] },
+        neighbors.all? { |n| !n[:recycler]},
         role % 3 == 2
       ]
 
       build_ahead = [
-        neigbors.any? { |n| n[:units?] && n[:theirs] }
+        neighbors.any? { |n| n[:units?] && n[:theirs] }
       ]
 
-      build_conditions = build_back.all || build_ahead.all
+      build_conditions = build_back.all? || build_ahead.all?
       build_conditions ? should_build = true : false
 
       # BUILD ACTION
@@ -206,36 +218,67 @@ loop {
     ###   SPAWN    ###
 
     if tile[:can_spawn] && any_matter
-      spawn_here = my_tiles.select {|t| t[:any_units] && neigbors(tiles, t).any? { |n| n[:theirs] && n[:any_units] } }
+      spawn_here = my_tiles.select {|t| t[:any_units] && neighbors(tiles, t).any? { |n| n[:theirs] && n[:any_units] } }
       amount = matter_for_units
       while amount > 0 && spawn_here.any? do
           sample = spawn_here.sample
           sx, sy = sample[:x], sample[:y]
-          actions << "SPAWN #{1} #{sx} #{sy}"
+          actions << "SPAWN 1 #{sx} #{sy}"
           amount -= 1
           spawn_here.delete(sample)
       end
 
-      if amount > 0
-         actions << "SPAWN #{amount} #{x} #{y}"
+      if amount > 0 && any_units && role_glob % 3 == 1
+         actions << "SPAWN #{1} #{x} #{y}"
+         amount -= 1
       end
+      matter_for_units = amount
     end
 
 
     ###   MOVE    ###
 
-    if units && !tile[:built]
+    if any_units && !tile[:built]
 
-      amount = 0
+      amount = tile[:units]
       neighbors = neighbors(tiles, tile)
-      tile_near_opp = tile_near_owner(neigbors, OPP)
-      opp_neighbor_units = neigbors.select { |n| n[:theirs] && n[:any_units] }
+      tile_near_opp = tile_near_owner(neighbors, OPP)
+      opp_neighbor_units = neighbors.select { |n| n[:theirs] && n[:any_units] }
+      neighbor_empty = neighbors.select { |n| !n[:any_units] && !n[:mine]}
+      nearest_of_none = nearest_of_owner(tiles, tile, width, height, NONE)
+      nearest_of_opp = nearest_of_owner(tiles, tile, width, height, OPP)
       if tile_near_opp
-        if opp_neighbor_units.any?
-
+        while amount > 0
+          opp_neighbor_units.each {|t|
+            if amount > 0
+              actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
+              amount -= 1
+            else
+              next
+            end
+          }
+          neighbor_empty.each { |t|
+            if amount > 0
+              actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
+              amount -= 1
+            else
+              next
+            end
+          }
         end
-        actions << "MOVE #{amount} #{x} #{y} #{tx} #{ty}"
       else
+        while amount > 0
+          t = nearest_of_opp
+          if amount > 0
+            actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
+            amount -= 1
+          end
+          t = nearest_ext(tiles, tile, width, height)
+          if amount > 0
+            actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
+            amount -= 1
+          end
+        end
       end
     end
 
@@ -245,4 +288,3 @@ loop {
   STDERR.puts "\u{1F91D}"
   puts actions.size > 0 ? actions*";" : "WAIT"
 }
-
