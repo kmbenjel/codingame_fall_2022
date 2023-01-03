@@ -244,27 +244,27 @@ loop {
       neighbors = neighbors(tiles, tile)
       tile_near_opp = tile_near_owner(neighbors, OPP)
       opp_neighbor_units = neighbors.select { |n| n[:theirs] && n[:any_units] }
-      neighbor_empty = neighbors.select { |n| !n[:any_units] && !n[:mine]}
+      neighbor_not_mine = neighbors.select { |n| !n[:recycler] && !n[:mine]}
       nearest_of_none = nearest_of_owner(tiles, tile, width, height, NONE)
       nearest_of_opp = nearest_of_owner(tiles, tile, width, height, OPP)
       if tile_near_opp
         while amount > 0
-          opp_neighbor_units.each {|t|
+          opp_neighbor_units.any? ? opp_neighbor_units.each {|t|
             if amount > 0
               actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
               amount -= 1
             else
               next
             end
-          }
-          neighbor_empty.each { |t|
+          } : next
+          neighbor_not_mine.any? ? neighbor_not_mine.each { |t|
             if amount > 0
               actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
               amount -= 1
             else
               next
             end
-          }
+          } : next
         end
       else
         while amount > 0
