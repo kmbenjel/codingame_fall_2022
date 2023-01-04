@@ -247,6 +247,7 @@ loop {
       neighbor_not_mine = neighbors.select { |n| !n[:recycler] && !n[:mine]}
       nearest_of_none = nearest_of_owner(tiles, tile, width, height, NONE)
       nearest_of_opp = nearest_of_owner(tiles, tile, width, height, OPP)
+      neighbor_not_mine_no_back = neighbor_not_mine.select { |n| n[:x] in [tile[:x], tile[:x] + dir] }
       if tile_near_opp
         while amount > 0
           opp_neighbor_units.any? ? opp_neighbor_units.each {|t|
@@ -266,25 +267,26 @@ loop {
             end
           } : next
         end
-      else
+      elsif neighbor_not_mine_no_back.any?
+        STDERR.print neighbor_not_mine_no_back
         while amount > 0
-          t = nearest_of_opp
+          t = neighbor_not_mine_no_back
           if amount > 0
             actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
             amount -= 1
-          end
-          t = nearest_ext(tiles, tile, width, height)
-          if amount > 0
-            actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
-            amount -= 1
+          else
+            next
           end
         end
       end
-    end
-
   }
-
   # To debug: STDERR.puts "Debug messages..."
   STDERR.puts "\u{1F91D}"
   puts actions.size > 0 ? actions*";" : "WAIT"
 }
+
+          # t = nearest_ext(tiles, tile, width, height)
+          # if amount > 0
+          #   actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
+          #   amount -= 1
+          # end
