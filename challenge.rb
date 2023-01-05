@@ -1,18 +1,19 @@
 ﻿STDOUT.sync = true # DO NOT REMOVE
-
+require 'benchmark'
 ME = 1
 OPP = 0
 NONE = -1
 
+$first_initial_unit = 0
 width, height = gets.split.map &:to_i
 role_glob = -1
 spawn_here = []
 build_history = []
-dir = nil
+$dir = 0
 last_x = nil
 
 def vanguard(row, dir)
-	units = row.select { |t| t[:any_units] && t[:mine] }
+	units = row.select { |t| t[:mine] && !t[:recycler] }
 	dir == 1 ? units.last : units.first
 end
 
@@ -32,11 +33,11 @@ def distribute(tiles, tile, amount, actions)
       if part > 0
         actions << "MOVE #{part + rem} #{x} #{y} #{t[:x]} #{t[:y]}"
         amount -= part + rem
-        rem > 0 ? rem -= 1 : false
+        rem = 0
       elsif rem > 0
         actions << "MOVE #{rem} #{x} #{y} #{t[:x]} #{t[:y]}"
         amount -= rem
-        rem -= 1
+        rem = 0
       end
     }
   end
@@ -45,52 +46,39 @@ def distribute(tiles, tile, amount, actions)
   return record
 end
 
-def nearest_ext(tiles, tile, width, height)
-  # select all tiles from the same column
-  column_tiles = tiles.select { |t| t[:x] == tile[:x] }
-  # select the extreme tiles
-  extreme_tiles = column_tiles.select do |t|
-    t[:y] == 0 || t[:y] == height - 1
-  end
-  # find the nearest extreme tile
-  nearest = extreme_tiles.min_by { |t| (t[:y] - tile[:y]).abs }
-  nearest
-end
+# def nearest_ext(tiles, tile, width, height)
+#   # select all tiles from the same column
+#   column_tiles = tiles.select { |t| t[:x] == tile[:x] }
+#   # select the extreme tiles
+#   extreme_tiles = column_tiles.select do |t|
+#     t[:y] == 0 || t[:y] == height - 1
+#   end
+#   # find the nearest extreme tile
+#   nearest = extreme_tiles.min_by { |t| (t[:y] - tile[:y]).abs }
+#   nearest
+# end
 
 # Check if I have scrap in the current tile and the neighboring tiles
-def scrap_around(tiles, tile, scrap)
-  total_scrap_amount = 0
-  tiles.each do |t|
-    if ((t[:x] == tile[:x] && t[:y] == tile[:y] + 1) ||
-      (t[:x] == tile[:x] && t[:y] == tile[:y] - 1) ||
-      (t[:y] == tile[:y] && t[:x] == tile[:x] + 1) ||
-      (t[:y] == tile[:y] && t[:x] == tile[:x] - 1) ||
-    (t[:x] == tile[:x] && t[:y] == tile[:y]))
-    total_scrap_amount += t[:scrap_amount]
-    end
-end
-return total_scrap_amount >= scrap
-end
+# def scrap_around(tiles, tile, scrap)
+#   total_scrap_amount = 0
+#   tiles.each do |t|
+#     if ((t[:x] == tile[:x] && t[:y] == tile[:y] + 1) ||
+#       (t[:x] == tile[:x] && t[:y] == tile[:y] - 1) ||
+#       (t[:y] == tile[:y] && t[:x] == tile[:x] + 1) ||
+#       (t[:y] == tile[:y] && t[:x] == tile[:x] - 1) ||
+#     (t[:x] == tile[:x] && t[:y] == tile[:y]))
+#     total_scrap_amount += t[:scrap_amount]
+#     end
+# end
+# return total_scrap_amount >= scrap
+# end
 
 def first_initial_unit(tiles)
-  initial_unit_x = nil
-  initial_unit_y = nil
-  tiles.each do |tile|
-    if tile[:units] > 0
-      if initial_unit_x.nil? || tile[:x] < initial_unit_x
-        initial_unit_x = tile[:x]
-        initial_unit_y = tile[:y]
-      elsif tile[:x] == initial_unit_x && tile[:y] > initial_unit_y
-        initial_unit_y = tile[:y]
-      end
-    end
-  end
-
-  tiles.find { |t| t[:x] == initial_unit_x && t[:y] == initial_unit_y }
+  tiles.select {|tile| tile[:any_units] == true && tile[:mine] == true}.sample
 end
 
 def tile_near_owner(neighbors, owner)
-  neighbors.any? { |neighbor| neighbor[:owner] == owner}
+  neighbors.any? { |neighbor| neighbor[:owner] == owner && !neighbor[:recycler] }
 end
 
 def nearest_of_owner(tiles, my_tile, width, height, owner)
@@ -112,26 +100,26 @@ def nearest_of_owner(tiles, my_tile, width, height, owner)
   result
 end
 
-def nearest_of_none_back(tiles, my_tile, width, height, dir, x)
-  tiles_of_owner = tiles.select { |t|
-    t[:scrap_amount] > 0 && !t[:mine] && (dir == 1 ? t[:x] < x : t[:x] > x)
-  }
-  return nil if tiles_of_owner.empty?
+# def nearest_of_none_back(tiles, my_tile, width, height, dir, x)
+#   tiles_of_owner = tiles.select { |t|
+#     t[:scrap_amount] > 0 && !t[:mine] && (dir == 1 ? t[:x] < x : t[:x] > x)
+#   }
+#   return nil if tiles_of_owner.empty?
 
-  min_dist = nil
-  result = nil
+#   min_dist = nil
+#   result = nil
 
-  tiles_of_owner.each do |tile|
-    dist = (my_tile[:x] - tile[:x]).abs + (my_tile[:y] - tile[:y]).abs
+#   tiles_of_owner.each do |tile|
+#     dist = (my_tile[:x] - tile[:x]).abs + (my_tile[:y] - tile[:y]).abs
 
-    if min_dist.nil? || dist < min_dist
-      min_dist = dist
-      result = { x: tile[:x], y: tile[:y] }
-    end
-  end
+#     if min_dist.nil? || dist < min_dist
+#       min_dist = dist
+#       result = { x: tile[:x], y: tile[:y] }
+#     end
+#   end
 
-  result
-end
+#   result
+# end
 
 def neighbors(tiles, my_tile)
   result = []
@@ -148,6 +136,11 @@ end
 ###   GAME LOOP   ####
 
 loop {
+  time = Benchmark.realtime do
+
+
+
+
   role_glob += 1
   tiles = []
   my_units = []
@@ -157,7 +150,6 @@ loop {
   opp_tiles = []
   my_tiles = []
   neutral_tiles = []
-
 
   my_matter, opp_matter = gets.split.map &:to_i
   height.times { |y|
@@ -174,7 +166,7 @@ loop {
         theirs: owner == 0,
         neutral: owner == -1,
         units: units,
-        any_units: units,
+        any_units: units > 0,
         recycler: recycler==1,
         can_build: can_build==1,
         can_spawn: can_spawn==1,
@@ -214,14 +206,12 @@ loop {
 
   # USEFUL VARIABLES
 
-  my_robots_count = my_units.map { |t| t[:units] }.sum
-  opp_robots_count = opp_units.map { |t| t[:units] }.sum
-  my_empty_tiles = my_tiles.select { |t| t[:units] == 0 }
-
 
   # KNOW DIRECTION
-
-  first_initial_unit(tiles)[:x] < width / 2 ? dir = 1 : dir = -1
+  if role_glob == 0
+    $first_initial_unit = first_initial_unit(tiles)[:x]
+    $first_initial_unit < width / 2 ? $dir = 1 : $dir = -1
+  end
 
   role = -1
   builds = 0
@@ -229,17 +219,30 @@ loop {
 
   ###  IN ENDGAME?  ###
 
-	dir == 1 ? last_x = width - 1 : last_x = 0
+	$dir == 1 ? last_x = width - 1 : last_x = 0
 	rows = []
-	(0...height).each { |r| rows << tiles.select { |t| t[:y] == r } }
+	(0...height).each { |r|
+    rows << tiles.select { |t| t[:y] == r }
+  }
 	in_endgame = rows.all? { |r|
-		vanguard = vanguard(r, dir)
-		vanguard ? next_tile = r[vanguard[:x] + dir] : next_tile = {}
-		r.any? { |t|
-			(t[:mine] && t[:units] && t[:x] == last_x) || (t == vanguard && (next_tile[:recycler] || next_tile[:grass]))
-		}
+
+		vanguard = vanguard(r, $dir)
+    if vanguard
+      nx = vanguard[:x] + $dir
+      ny = vanguard[:y]
+      next_tile = tiles.find { |t| t[:x] == nx && t[:y] == ny }
+      next_tile && (next_tile[:recycler] || next_tile[:grass])
+    else
+      true
+    end
+		# vanguard ? next_tile = r[vanguard[:x] + $dir] : next_tile = {}
+		# r.any? { |t|
+		# 	(t[:mine] && t[:units] && t[:x] == last_x) || (t == vanguard && !(next_tile[:theirs] && next_tile[:units]))
+		# }
 	}
-	STDERR.puts in_endgame
+
+  vanguards = []
+  rows.each { |r| vanguards << vanguard(r, $dir) if vanguard(r, $dir) }
 
   ###   ACTIONS LOOP    ###
   my_tiles.each { |tile|
@@ -252,96 +255,129 @@ loop {
     any_units = tile[:any_units]
     any_matter = matter_for_units > 0
     no_units = !tile[:any_units]
-    #amount = tile[:units]
     neighbors = neighbors(tiles, tile)
+    neighbors_avail = neighbors.select { |n| n[:any_scrap] && !n[:recycler] }
     tile_near_opp = tile_near_owner(neighbors, OPP)
     opp_neighbor_units = neighbors.select { |n| n[:theirs] && n[:any_units] }
     neighbor_not_mine = neighbors.select { |n| !n[:recycler] && !n[:mine] && n[:any_scrap]}
     nearest_of_none = nearest_of_owner(tiles, tile, width, height, NONE)
     nearest_of_opp = nearest_of_owner(tiles, tile, width, height, OPP)
-    neighbor_not_mine_no_back = neighbor_not_mine.select { |n| [x, x + dir].include?(n[:x]) }
-    nearest_of_none_back = nearest_of_none_back(tiles, tile, width, height, dir, x)
-    not_mine = tiles.select { |t| !t[:mine] && t[:any_scrap] }
+    nearest_not_mine = [nearest_of_none, nearest_of_opp].filter { |t| t }
+    neighbor_not_mine_no_back = neighbor_not_mine.select { |n|
+      [x, x + $dir].include?(n[:x]) && !n[:in_range_of_recycler]
+    }
+    no_back = neighbors_avail.select { |n|
+      nx = n[:x]
+      nx == x + $dir || nx == x
+      !n[:in_range_of_recycler]
+    }
+    back = neighbors_avail.select { |n|
+      nx = n[:x]
+      nx == x - $dir || nx == x
+    }
+    back_neutral = back.select { |n| n[:neutral]}
+    #nearest_of_none_back = nearest_of_none_back(tiles, tile, width, height, $dir, x)
+    #not_mine = tiles.select { |t| !t[:mine] && t[:any_scrap] }
     # not_mine_in_back = not_mine.select { |t| dir == 1 ? t[:x] < x : t[:x] > x }
 
     ###   BUILD   ###
     should_build = nil
-    if tile[:can_build] && any_matter
-
+    find_build = my_tiles.find { |t|
+      neighbors(tiles, t).any? {|n| n[:theirs]}
+    }
+    if any_matter && role == 0
       # SHOULD BUILD?
-      build_back = [
-        role_glob <= 20,
-        scrap_around(tiles, tile, 40),
-        x < width / 2,
-        y < height - 2 && y > 2,
-        neighbors.any? { |n| n[:mine] && n[:any_units] },
-        neighbors.all? { |n| !n[:recycler]},
-        role % 3 == 2
-      ]
+      if role_glob == 2
+        b = my_tiles.find { |t| !t[:any_units] && t[:can_build]}
+        bx, by = b[:x], b[:y]
+        actions << "BUILD #{bx} #{by}"
+        my_tiles.each { |t| t == b ? t[:built] = 1 : false }
+        matter_for_units -= 1
+      elsif role_glob <= width / 2 && role_glob % 3 == 2
+        b = my_tiles.select { |t| !t[:any_units] && t[:can_build] }.sample
+        bx, by = b[:x], b[:y]
+        actions << "BUILD #{bx} #{by}"
+        my_tiles.each { |t| t == b ? t[:built] = 1 : false }
+        matter_for_units -= 1
+      elsif find_build
+        b = find_build
+        bx, by = b[:x], b[:y]
+        actions << "BUILD #{bx} #{by}"
+        my_tiles.each { |t| t == b ? t[:built] = 1 : false }
+        matter_for_units -= 1
+      end
 
-      build_ahead = [
-        neighbors.any? { |n| n[:any_units] && n[:theirs] }
-      ]
+      # build_ahead = [
+      #   neighbors.any? { |n| n[:any_units] && n[:theirs] } && neighbors.any? { |n| !n[:any_units] && n[:mine] }
+      # ]
 
-      build_conditions = build_back.all? || build_ahead.all?
-      build_conditions ? should_build = true : false
+      # build_conditions = build_back.all? || build_ahead.all?
+      # build_conditions ? should_build = true : false
 
       # BUILD ACTION
-      if should_build
-        actions << "BUILD #{x} #{y}"
-        matter_for_units -= 1
-        tile[:built] = true
-      end
+    #   if should_build
+    #     actions << "BUILD #{x} #{y}"
+    #     matter_for_units -= 1
+    #     tile[:built] = true
+    #   end
     end
 
     ###   SPAWN    ###
 
-    if tile[:can_spawn] && any_matter
-      spawn_here = my_tiles.select {|t| t[:any_units] && neighbors(tiles, t).any? { |n| n[:theirs] && n[:any_units] } }
-      amount = matter_for_units
-      while amount > 0 && spawn_here.any? do
-        sample = spawn_here.sample
-        sx, sy = sample[:x], sample[:y]
-        actions << "SPAWN 1 #{sx} #{sy}"
-        amount -= 1
-        spawn_here.delete(sample)
-      end
+    if any_matter && role == 0 && role_glob != 2 && role_glob % 5 != 2
+      while matter_for_units > 0 do
+        sample = vanguards.select { |v| v[:any_units] }.sample
 
-      if amount > 0 && any_units && role_glob % 3 == 1
-        actions << "SPAWN #{1} #{x} #{y}"
-        amount -= 1
+        if sample && sample[:can_spawn]
+          sx, sy = sample[:x], sample[:y]
+          actions << "SPAWN 1 #{sx} #{sy}"
+          matter_for_units -= 1
+          vanguards.delete(sample)
+        end
       end
-      matter_for_units = amount
+      # matter_for_units = amount
+      # if amount > 0 && any_units && role_glob % 2 == 1
+      #   actions << "SPAWN #{amount} #{x} #{y}"
+      #   amount = 0
+      # end
     end
 
 
     ###   MOVE    ###
 
-    if any_units && !tile[:built]
+    if any_units && !tile[:built] && !tile[:recycler]
+      amount = tile[:units]
       if tile_near_opp
+        record = distribute([nearest_of_opp], tile, amount, actions)
+        amount, actions = record
         record = distribute(opp_neighbor_units, tile, amount, actions)
         amount, actions = record
         amount = distribute(neighbor_not_mine, tile, amount, actions)
         amount, actions = record
       elsif in_endgame
-        record = distribute([nearest_of_none_back], tile, amount, actions)
+        record = distribute(back_neutral, tile, amount, actions)
+        amount, actions = record
+        record = distribute(back, tile, amount, actions)
         amount, actions = record
       else
-        record = distribute(neighbor_not_mine_no_back + [nearest_of_opp], tile, amount, actions)
-        amount, actions = record
+
         # record = distribute([nearest_of_opp], tile, amount, actions)
         # amount, actions = record
+        record = distribute(neighbor_not_mine_no_back, tile, amount, actions)
+        amount, actions = record
+        # record = distribute(no_back, tile, amount, actions)
+        # amount, actions = record
+        record = distribute(nearest_not_mine, tile, amount, actions)
+        amount, actions = record
       end
     end
   }
   # To debug: STDERR.puts "Debug messages..."
-  STDERR.puts "KHALID, 42-intra: kbenjell"
+  actions << "MESSAGE KHALID, 42-intra: kbenjell"
   puts actions.size > 0 ? actions*";" : "WAIT"
+
+end
+STDERR.puts "Time elapsed #{time*1000} milliseconds"
 }
 
-# t = nearest_ext(tiles, tile, width, height)
-# if amount > 0
-#   actions << "MOVE 1 #{x} #{y} #{t[:x]} #{t[:y]}"
-#   amount -= 1
-# end
 
