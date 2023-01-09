@@ -136,7 +136,6 @@ end
 ###   GAME LOOP   ####
 
 loop {
-  time = Benchmark.realtime do
 
 
 
@@ -200,6 +199,8 @@ loop {
     # PARSING DONE
   }
 
+  
+  time = Benchmark.realtime do
   ###   COLLECT ACTIONS   ###
 
   actions = []
@@ -287,11 +288,12 @@ loop {
     }
     if any_matter && role == 0
       # SHOULD BUILD?
-      if role_glob == 2
+      if role_glob == 0
         b = my_tiles.find { |t| !t[:any_units] && t[:can_build]}
         bx, by = b[:x], b[:y]
         actions << "BUILD #{bx} #{by}"
         my_tiles.each { |t| t == b ? t[:built] = 1 : false }
+		STDERR.puts "296"
         matter_for_units -= 1
       elsif role_glob <= width / 2 && role_glob % 3 == 2
         b = my_tiles.select { |t| !t[:any_units] && t[:can_build] }.sample
@@ -299,12 +301,14 @@ loop {
         actions << "BUILD #{bx} #{by}"
         my_tiles.each { |t| t == b ? t[:built] = 1 : false }
         matter_for_units -= 1
+		STDERR.puts "304"
       elsif find_build
         b = find_build
         bx, by = b[:x], b[:y]
         actions << "BUILD #{bx} #{by}"
         my_tiles.each { |t| t == b ? t[:built] = 1 : false }
         matter_for_units -= 1
+		STDERR.puts "311, find_build"
       end
 
       # build_ahead = [
@@ -324,7 +328,7 @@ loop {
 
     ###   SPAWN    ###
 
-    if any_matter && role == 0 && role_glob != 2 && role_glob % 5 != 2
+    if any_matter && role == 0 && role_glob != 0 && role_glob % 5 != 2
       while matter_for_units > 0 do
         sample = vanguards.select { |v| v[:any_units] }.sample
 
@@ -333,7 +337,10 @@ loop {
           actions << "SPAWN 1 #{sx} #{sy}"
           matter_for_units -= 1
           vanguards.delete(sample)
-        end
+		  STDERR.puts "340, SPAWNED"
+		else
+			break
+		end
       end
       # matter_for_units = amount
       # if amount > 0 && any_units && role_glob % 2 == 1
@@ -347,6 +354,7 @@ loop {
 
     if any_units && !tile[:built] && !tile[:recycler]
       amount = tile[:units]
+	  STDERR.puts "357, About to move"
       if tile_near_opp
         record = distribute([nearest_of_opp], tile, amount, actions)
         amount, actions = record
@@ -370,12 +378,12 @@ loop {
         record = distribute(nearest_not_mine, tile, amount, actions)
         amount, actions = record
       end
+	  STDERR.puts "381, Just tried to move"
     end
   }
   # To debug: STDERR.puts "Debug messages..."
   actions << "MESSAGE KHALID, 42-intra: kbenjell"
   puts actions.size > 0 ? actions*";" : "WAIT"
-
 end
 STDERR.puts "Time elapsed #{time*1000} milliseconds"
 }
