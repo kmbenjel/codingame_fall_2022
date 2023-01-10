@@ -1,4 +1,4 @@
-﻿STDOUT.sync = true # DO NOT REMOVE
+STDOUT.sync = true # DO NOT REMOVE
 require 'benchmark'
 ME = 1
 OPP = 0
@@ -179,7 +179,6 @@ loop {
         my_tiles.append(tile)
         if tile[:any_units]
           my_units.append(tile)
-
         elsif tile[:recycler]
           my_recyclers.append(tile)
         end
@@ -187,13 +186,11 @@ loop {
         opp_tiles.append(tile)
         if tile[:any_units]
           opp_units.append(tile)
-
         elsif tile[:recycler]
           opp_recyclers.append(tile)
         end
       else
         neutral_tiles.append(tile)
-
       end
     }
     # PARSING DONE
