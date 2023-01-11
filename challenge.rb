@@ -1,4 +1,4 @@
-STDOUT.sync = true # DO NOT REMOVE
+STDOUT.sync = true #DO NOT REMOVE
 require 'benchmark'
 ME = 1
 OPP = 0
@@ -216,11 +216,10 @@ loop {
   matter_for_units = my_matter / 10
 
   ###  IN ENDGAME?  ###
-
-	$dir == 1 ? last_x = width - 1 : last_x = 0
-	rows = []
-	(0...height).each { |r|
-    rows << tiles.select { |t| t[:y] == r }
+  $dir == 1 ? last_x = width - 1 : last_x = 0
+  rows = []
+  (0...height).each { |r|
+	rows << tiles.select { |t| t[:y] == r }
   }
 	in_endgame = rows.all? { |r|
 
