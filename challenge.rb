@@ -1,15 +1,15 @@
+# frozen_string_literal: false
+
 STDOUT.sync = true # DO NOT REMOVE
 require 'benchmark'
 ME = 1
 OPP = 0
 NONE = -1
 
-$first_initial_unit = 0
+@first_initial_unit = 0
+@dir = 0
 width, height = gets.split.map(&:to_i)
 role_glob = -1
-spawn_here = []
-build_history = []
-$dir = 0
 last_x = nil
 
 def vanguard(row, dir)
@@ -28,11 +28,11 @@ def distribute(tiles, tile, amount, actions)
     part = amount / targets.size
     rem = amount % targets.size
     targets.each do |t|
-      if part > 0
+      if part.positive?
         actions << "MOVE #{part + rem} #{x} #{y} #{t[:x]} #{t[:y]}"
         amount -= part + rem
         rem = 0
-      elsif rem > 0
+      elsif rem.positive?
         actions << "MOVE #{rem} #{x} #{y} #{t[:x]} #{t[:y]}"
         amount -= rem
         rem = 0
@@ -80,21 +80,18 @@ def tile_near_owner(neighbors, owner)
 end
 
 def nearest_of_owner(tiles, my_tile, _width, _height, owner)
-  tiles_of_owner = tiles.select { |tile| tile[:scrap_amount] > 0 && tile[:owner] == owner }
+  tiles_of_owner = tiles.select { |tile| tile[:scrap_amount].positive? && tile[:owner] == owner }
   return nil if tiles_of_owner.empty?
 
   min_dist = nil
   result = nil
-
   tiles_of_owner.each do |tile|
     dist = (my_tile[:x] - tile[:x]).abs + (my_tile[:y] - tile[:y]).abs
-
     if min_dist.nil? || dist < min_dist
       min_dist = dist
       result = { x: tile[:x], y: tile[:y] }
     end
   end
-
   result
 end
 
@@ -144,11 +141,10 @@ loop do
   my_tiles = []
   neutral_tiles = []
 
-  my_matter, opp_matter = gets.split.map(&:to_i)
+  my_matter, _opp_matter = gets.split.map(&:to_i)
   height.times do |y|
     width.times do |x|
       scrap_amount, owner, units, recycler, can_build, can_spawn, in_range_of_recycler = gets.split.map(&:to_i)
-
       tile = {
         scrap_amount: scrap_amount,
         any_scrap: scrap_amount > 0,
@@ -198,8 +194,8 @@ loop do
 
     # KNOW DIRECTION
     if role_glob == 0
-      $first_initial_unit = first_initial_unit(tiles)[:x]
-      $dir = $first_initial_unit < width / 2 ? 1 : -1
+      first_initial_unit = first_initial_unit(tiles)[:x]
+      @dir = first_initial_unit < width / 2 ? 1 : -1
     end
 
     role = -1
@@ -207,29 +203,29 @@ loop do
     matter_for_units = my_matter / 10
 
     ###  IN ENDGAME?  ###
-    last_x = $dir == 1 ? width - 1 : 0
+    last_x = @dir == 1 ? width - 1 : 0
     rows = []
     (0...height).each do |r|
       rows << tiles.select { |t| t[:y] == r }
     end
     in_endgame = rows.all? do |r|
-      vanguard = vanguard(r, $dir)
+      vanguard = vanguard(r, @dir)
       if vanguard
-        nx = vanguard[:x] + $dir
+        nx = vanguard[:x] + @dir
         ny = vanguard[:y]
         next_tile = tiles.find { |t| t[:x] == nx && t[:y] == ny }
         next_tile && (next_tile[:recycler] || next_tile[:grass])
       else
         true
       end
-      # vanguard ? next_tile = r[vanguard[:x] + $dir] : next_tile = {}
+      # vanguard ? next_tile = r[vanguard[:x] + @dir] : next_tile = {}
       # r.any? { |t|
       #     (t[:mine] && t[:units] && t[:x] == last_x) || (t == vanguard && !(next_tile[:theirs] && next_tile[:units]))
       # }
     end
 
     vanguards = []
-    rows.each { |r| vanguards << vanguard(r, $dir) if vanguard(r, $dir) }
+    rows.each { |r| vanguards << vanguard(r, @dir) if vanguard(r, @dir) }
 
     ###   ACTIONS LOOP    ###
     my_tiles.each do |tile|
@@ -250,21 +246,18 @@ loop do
       nearest_of_opp = nearest_of_owner(tiles, tile, width, height, OPP)
       nearest_not_mine = [nearest_of_none, nearest_of_opp].filter { |t| t }
       neighbor_not_mine_no_back = neighbor_not_mine.select do |n|
-        [x, x + $dir].include?(n[:x]) && !n[:in_range_of_recycler]
+        [x, x + @dir].include?(n[:x]) && !n[:in_range_of_recycler]
       end
       no_back = neighbors_avail.select do |n|
         nx = n[:x]
-        nx == x + $dir || nx == x
+        nx == x + @dir || nx == x
         !n[:in_range_of_recycler]
       end
       back = neighbors_avail.select do |n|
         nx = n[:x]
-        nx == x - $dir || nx == x
+        nx == x - @dir || nx == x
       end
       back_neutral = back.select { |n| n[:neutral] }
-      # nearest_of_none_back = nearest_of_none_back(tiles, tile, width, height, $dir, x)
-      # not_mine = tiles.select { |t| !t[:mine] && t[:any_scrap] }
-      # not_mine_in_back = not_mine.select { |t| dir == 1 ? t[:x] < x : t[:x] > x }
 
       ###   BUILD   ###
       should_build = nil
@@ -298,20 +291,6 @@ loop do
           matter_for_units -= 1
           warn '311, find_build'
         end
-
-        # build_ahead = [
-        #   neighbors.any? { |n| n[:any_units] && n[:theirs] } && neighbors.any? { |n| !n[:any_units] && n[:mine] }
-        # ]
-
-        # build_conditions = build_back.all? || build_ahead.all?
-        # build_conditions ? should_build = true : false
-
-        # BUILD ACTION
-        #   if should_build
-        #     actions << "BUILD #{x} #{y}"
-        #     matter_for_units -= 1
-        #     tile[:built] = true
-        #   end
       end
 
       ###   SPAWN    ###
@@ -331,11 +310,6 @@ loop do
             break
           end
         end
-        # matter_for_units = amount
-        # if amount > 0 && any_units && role_glob % 2 == 1
-        #   actions << "SPAWN #{amount} #{x} #{y}"
-        #   amount = 0
-        # end
       end
 
       ###   MOVE    ###
@@ -369,7 +343,6 @@ loop do
       end
       warn '381, Just tried to move'
     end
-    # To debug: STDERR.puts "Debug messages..."
     actions << 'MESSAGE KHALID, 42-intra: kbenjell'
     puts actions.empty? ? 'WAIT' : actions * ';'
   end
